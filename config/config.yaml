@@ -1,0 +1,71 @@
+# neZha 统一配置文件
+# 包含模型、日志、角色配置
+
+# 应用配置
+app:
+  name: nezha
+  cli: nezha-cli
+  mcp: nezha-mcp
+
+# 模型配置
+model:
+  provider: dashscope-aliyun  # openai / anthropic / google / dashscope-aliyun / volcengine / minimax / zhipu / moonshot / deepseek / local / openrouter
+  model: qwen3-8b
+  api_key: ${DASHSCOPE_API_KEY}
+  base_url: ${DASHSCOPE_BASE_URL}
+
+# 日志配置
+logging:
+  level: INFO  # DEBUG / INFO / WARNING / ERROR
+
+# 角色配置
+roles:
+  lawyer:
+    name: 律师
+    description: 合同风险、法律建议
+    prompt_file: prompts/lawyer.md
+
+  tech:
+    name: 技术顾问
+    description: 代码、架构、技术选型
+    prompt_file: prompts/tech.md
+
+  marketing:
+    name: 营销顾问
+    description: 推广策略、用户增长
+    prompt_file: prompts/marketing.md
+
+  screenwriter:
+    name: 剧本大师
+    description: 故事创作、剧本编写、角色对话
+    prompt_file: prompts/screenwriter.md
+
+  resume_coach:
+    name: 简历教练
+    description: 简历优化、求职辅导、面试准备
+    prompt_file: prompts/resume_coach.md
+
+  picky_boss:
+    name: 挑剔老板
+    description: 文档审核、演讲稿改进、批评指导
+    prompt_file: prompts/picky_boss.md
+
+  json_prompt_generator:
+    name: 双旗镇刀客风格图像生成
+    description: 老电影风格图像提示词生成
+    prompt_file: prompts/json_prompt_generator.md
+
+  nanobanana2:
+    name: Nano Banana 2 电影级拼图大导
+    description: 6x6电影截图紧凑拼图提示词生成
+    prompt_file: prompts/nanobanana2.md
+
+  image_prompt_generator:
+    name: 图像提示词生成器
+    description: 中英文双语图像提示词生成
+    prompt_file: prompts/image_prompt_generator.md
+
+  ai_comic_creator:
+    name: AI漫剧创作大师
+    description: 从剧本到分镜图到视频的全流程创作
+    prompt_file: prompts/ai_comic_creator.md

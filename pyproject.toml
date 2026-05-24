@@ -1,0 +1,27 @@
+[project]
+name = "nezha"
+version = "0.1.0"
+description = "Agent 工作流编排框架"
+requires-python = ">=3.12"
+dependencies = [
+    "langchain>=0.3.0",
+    "langgraph>=0.2.0",
+    "langchain-openai",
+    "langchain-anthropic",
+    "langchain-google-genai",
+    "pydantic>=2.0",
+    "pyyaml",
+    "fastmcp>=0.1.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+nezha-cli = "cli:main"
+nezha-mcp = "mcp_server:main"
+
+[tool.setuptools]
+py-modules = ["cli", "mcp_server"]
+
+[tool.setuptools.packages.find]
+include = ["workflows*", "utils*"]
+exclude = ["config*"]
