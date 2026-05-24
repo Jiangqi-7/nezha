@@ -6,6 +6,7 @@
 """
 
 import os
+import httpx
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -75,10 +76,13 @@ def load_model():
         # enable_thinking 仅对明确支持的 provider 启用
         supported_thinking = {"deepseek", "openai"}
         model_kwargs = {"extra_body": {"enable_thinking": False}} if provider not in supported_thinking else {}
+
         return ChatOpenAI(
             model=config["model"],
             api_key=api_key,
             base_url=final_base_url,
+            timeout=30.0,
+            max_retries=0,  # 禁用SDK内部重试，由我们自己的重试逻辑控制
             **model_kwargs,
         )
 
@@ -114,6 +118,10 @@ class LazyModel:
     """延迟加载的模型代理类"""
     def __call__(self, *args, **kwargs):
         return get_model()(*args, **kwargs)
+
+    def invoke(self, *args, **kwargs):
+        """委托给底层模型的 invoke 方法"""
+        return get_model().invoke(*args, **kwargs)
 
     def __getattr__(self, name):
         return getattr(get_model(), name)

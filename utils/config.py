@@ -61,3 +61,8 @@ def get_roles_config() -> dict:
 def get_app_config() -> dict:
     """获取应用配置"""
     return get_config().get("app", {})
+
+
+def get_code_assistant_config() -> dict:
+    """获取代码助手配置"""
+    return get_config().get("code_assistant", {})

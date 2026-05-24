@@ -1,6 +1,7 @@
 # neZha
 
-一个给 Agent 使用的 Agent。
+给 Agent 使用的工具模块框架。
+核心能力：扩展 Agent 的能力边界，Agent 通过调用 neZha 服务获取专业能力（角色扮演、代码分析、法律咨询等），无需在自己身上定义大量 system prompt。
 
 ## 快速开始
 
