@@ -6,6 +6,8 @@
     nezha-cli --interactive       # 交互模式
     nezha-cli --list-roles        # 列出所有角色
 """
+__version__ = "0.1.0"
+
 import argparse
 import json
 import os
@@ -26,6 +28,10 @@ logger = get_logger(APP_NAME)
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 5555
 AUTH_TOKEN = os.getenv("NEZHA_AUTH_TOKEN", "")
+
+if not AUTH_TOKEN:
+    import warnings
+    warnings.warn("NEZHA_AUTH_TOKEN 未设置，认证被禁用（不推荐生产环境）")
 
 
 def send_request(request: dict, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT) -> dict:
@@ -84,31 +90,37 @@ def handle_request(request: dict) -> dict:
 
 
 def run_server(host: str, port: int):
+    import threading
+
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((host, port))
     server.listen(5)
     logger.info(f"neZha server 启动成功 {host}:{port}")
 
+    def handle_client(client, addr):
+        try:
+            data = client.recv(65536).decode("utf-8")
+            if data:
+                if len(data) > 1024 * 1024:
+                    client.sendall(json.dumps({"success": False, "error": "请求过大"}))
+                else:
+                    request = json.loads(data)
+                    request.pop("token", None)
+                    response = handle_request(request)
+                    client.sendall(json.dumps(response, ensure_ascii=False).encode("utf-8"))
+        except json.JSONDecodeError:
+            client.sendall(json.dumps({"success": False, "error": "无效 JSON"}))
+        except Exception as e:
+            logger.error(f"处理请求失败: {e}")
+        finally:
+            client.close()
+
     while True:
         try:
             client, addr = server.accept()
-            try:
-                data = client.recv(65536).decode("utf-8")
-                if data:
-                    if len(data) > 1024 * 1024:
-                        client.sendall(json.dumps({"success": False, "error": "请求过大"}))
-                    else:
-                        request = json.loads(data)
-                        request.pop("token", None)
-                        response = handle_request(request)
-                        client.sendall(json.dumps(response, ensure_ascii=False).encode("utf-8"))
-            except json.JSONDecodeError:
-                client.sendall(json.dumps({"success": False, "error": "无效 JSON"}))
-            except Exception as e:
-                logger.error(f"处理请求失败: {e}")
-            finally:
-                client.close()
+            thread = threading.Thread(target=handle_client, args=(client, addr), daemon=True)
+            thread.start()
         except KeyboardInterrupt:
             logger.info("收到中断信号，关闭服务器")
             break
@@ -172,6 +184,7 @@ def main():
     parser.add_argument("--session-id", help="会话ID（可选）")
     parser.add_argument("--list-roles", action="store_true", help="列出所有角色")
     parser.add_argument("--interactive", action="store_true", help="交互模式")
+    parser.add_argument("--version", action="version", version=f"{APP_NAME} {__version__}")
     parser.add_argument("command", nargs="?", help="子命令: server")
 
     args = parser.parse_args()

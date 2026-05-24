@@ -25,7 +25,7 @@ mcp = FastMCP(APP_NAME)
 
 @mcp.tool()
 def call_role(role: str, prompt: str, session_id: str | None = None,
-              current_role: str = "", thread_id: str | None = None) -> str:
+              current_role: str = "") -> str:
     """调用角色
 
     Args:
@@ -33,7 +33,6 @@ def call_role(role: str, prompt: str, session_id: str | None = None,
         prompt: 输入提示
         session_id: 会话ID（可选，不传自动生成）
         current_role: 当前生效的角色名（用于角色切换）
-        thread_id: 线程ID（可选，不传自动生成）
 
     Returns:
         角色的回复内容，失败时返回错误信息字符串
@@ -43,8 +42,8 @@ def call_role(role: str, prompt: str, session_id: str | None = None,
         if role_lower not in ROLES_CONFIG:
             return f"[错误] 角色 {role} 不存在，请检查 roles.yaml 配置"
 
-        tid = thread_id or session_id or str(uuid.uuid4())
-        logger.info(f"调用角色 {role_lower}，thread_id: {tid}")
+        tid = session_id or str(uuid.uuid4())
+        logger.info(f"调用角色 {role_lower}，session_id: {tid}")
 
         result = role_playing_graph.invoke(
             {"role": role_lower, "current_role": current_role, "thread_id": tid,
