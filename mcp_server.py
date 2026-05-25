@@ -74,6 +74,31 @@ def list_roles() -> dict:
         return {"error": str(e)}
 
 
+@mcp.tool()
+def code_assistant(prompt: str) -> dict:
+    """代码助手
+
+    Args:
+        prompt: 代码需求描述
+
+    Returns:
+        包含 generation 等字段的字典
+    """
+    try:
+        from workflows.code_assistant import code_assistant_invoke
+        result = code_assistant_invoke(prompt)
+        return {
+            "success": True,
+            "content": result["messages"][-1].content if result["messages"] else "",
+            "generation": result.get("generation", {}),
+            "iterations": result.get("iterations", 0),
+            "error": result.get("error", "")
+        }
+    except Exception as e:
+        logger.error(f"code_assistant 失败: {e}")
+        return {"success": False, "error": str(e)}
+
+
 def main() -> None:
     """启动 MCP Server"""
     logger.info("启动 MCP Server")

@@ -185,9 +185,18 @@ def main():
     parser.add_argument("--list-roles", action="store_true", help="列出所有角色")
     parser.add_argument("--interactive", action="store_true", help="交互模式")
     parser.add_argument("--version", action="version", version=f"{APP_NAME} {__version__}")
+    parser.add_argument("--code", action="store_true", help="使用代码助手模式")
     parser.add_argument("command", nargs="?", help="子命令: server")
 
     args = parser.parse_args()
+
+    if args.code and args.prompt:
+        from workflows.code_assistant import code_assistant_invoke as invoke_code
+        result = invoke_code(args.prompt)
+        msgs = result.get("messages", [])
+        if msgs:
+            print(msgs[-1].content)
+        return
 
     if args.role and args.prompt:
         role_lower = args.role.lower()
