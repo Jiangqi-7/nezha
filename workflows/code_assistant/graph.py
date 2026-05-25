@@ -4,6 +4,7 @@ generate → check → decide → end / generate / reflect
                               ↓
                           reflect → generate
 """
+from functools import lru_cache
 from typing import Dict, List, TypedDict
 from langgraph.graph import END, StateGraph, START
 from langchain_core.messages import HumanMessage, AIMessage
@@ -27,32 +28,62 @@ class State(TypedDict):
     document: str
 
 
+@lru_cache(maxsize=1)
 def load_document() -> str:
-    """加载参考文档（按需调用）"""
+    """加载参考文档（subprocess 调用避免阻塞）"""
+    import subprocess
+    import sys
+
     doc_cfg = _config.get("document", {})
     source = doc_cfg.get("source", "url")
+    if source != "url":
+        return ""
 
-    if source == "url":
-        from langchain_community.document_loaders.recursive_url_loader import RecursiveUrlLoader
-        from bs4 import BeautifulSoup as Soup
+    urls = doc_cfg.get("urls", [])
+    if not urls:
+        return ""
 
-        urls = doc_cfg.get("urls", [])
-        if not urls:
-            return ""
+    script = '''
+import sys
+import signal
+sys.path.insert(0, '/mnt/f/PycharmProjects/neZha')
 
-        contents = []
-        for url in urls:
-            try:
-                loader = RecursiveUrlLoader(url=url, max_depth=10,
-                                           extractor=lambda x: Soup(x, "html.parser").text)
-                docs = loader.load()
-                contents.append("\n\n".join([doc.page_content for doc in docs]))
-            except Exception as e:
-                logger.warning(f"加载文档失败 {url}: {e}")
+# 设置 45 秒超时
+signal.alarm(45)
 
-        return "\n\n---\n\n".join(contents)
+try:
+    from langchain_community.document_loaders.recursive_url_loader import RecursiveUrlLoader
+    from bs4 import BeautifulSoup as Soup
 
-    return ""
+    urls = %s
+    contents = []
+    for url in urls:
+        try:
+            loader = RecursiveUrlLoader(url=url, max_depth=2,
+                                       extractor=lambda x: Soup(x, "html.parser").text)
+            docs = loader.load()
+            contents.append("\\n\\n".join([doc.page_content for doc in docs]))
+        except Exception as e:
+            print(f"加载失败 {url}: {e}", file=sys.stderr)
+    print("\\n\\n---\\n\\n".join(contents))
+except Exception as e:
+    print(f"加载异常: {e}", file=sys.stderr)
+''' % (urls,)
+
+    try:
+        result = subprocess.run(
+            [sys.executable, '-c', script],
+            capture_output=True,
+            text=True,
+            timeout=50
+        )
+        return result.stdout if result.returncode == 0 else ""
+    except subprocess.TimeoutExpired:
+        print("文档加载超时 (45s)", file=sys.stderr)
+        return ""
+    except Exception as e:
+        print(f"文档加载异常: {e}", file=sys.stderr)
+        return ""
 
 
 def create_workflow():
@@ -86,7 +117,7 @@ def invoke(question: str, document: str = "", thread_id: str = None) -> Dict:
 
     Args:
         question: 用户问题
-        document: 参考文档（可选，默认空）
+        document: 参考文档（可选，未提供时从配置加载）
         thread_id: 线程ID（可选）
 
     Returns:
@@ -97,6 +128,14 @@ def invoke(question: str, document: str = "", thread_id: str = None) -> Dict:
         thread_id = str(uuid.uuid4())
 
     logger.info(f"调用代码助手，thread_id: {thread_id}")
+
+    # 如果未提供 document，从配置自动加载（使用 lru_cache 缓存结果，仅首次加载）
+    if not document:
+        document = load_document()
+        if document:
+            logger.info(f"已加载文档，长度: {len(document)}")
+        else:
+            logger.info("未配置文档或加载失败")
 
     # 每次创建新的 workflow 实例，避免 LangGraph 内部状态累积导致 MemoryError
     graph = create_workflow()
