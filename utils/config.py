@@ -66,3 +66,8 @@ def get_app_config() -> dict:
 def get_code_assistant_config() -> dict:
     """获取代码助手配置"""
     return get_config().get("code_assistant", {})
+
+
+def get_lyricist_config() -> dict:
+    """获取歌词创作工作流配置"""
+    return get_config().get("lyricist", {})

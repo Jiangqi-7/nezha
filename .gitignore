@@ -8,6 +8,7 @@ wheels/
 CLAUDE.md
 .idea
 uv.lock
+.pytest*
 
 # Virtual environments
 .venv

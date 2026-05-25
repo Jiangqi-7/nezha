@@ -77,14 +77,36 @@ code_assistant:
     model: qwen3-8b
     enable_thinking: false
   document:
-    source: url
+    source: url    # url / local / both / none
     urls:
       - "https://docs.python.org/3/"
+    local_paths:   # 本地文档路径（支持 glob 模式）
+      - "README.md"
     cache: true
   executor:
     type: python_sandbox
     timeout: 5
     memory_limit: "128m"
-  max_iterations: 3
-  enable_reflect: true
+  max_iterations: 2
+  enable_reflect: false
   prompt_file: code_assistant/generate.md
+  # subprocess 调用超时配置（秒）
+  subprocess_timeout: 120
+  document_load_timeout: 45
+  recursion_limit: 100
+
+# 歌词创作工作流配置
+lyricist:
+  max_iterations: 5
+  pass_threshold: 75
+  plagiarism_threshold: 0.3
+  evaluation:
+    weights:
+      narrative: 0.25
+      imagery: 0.25
+      rhyme: 0.20
+      emotion: 0.20
+      singable: 0.10
+  cases:
+    good_dir: workflows/creation/lyricist/cases/good
+    bad_dir: workflows/creation/lyricist/cases/bad
